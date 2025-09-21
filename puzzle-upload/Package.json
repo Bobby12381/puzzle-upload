@@ -1,8 +1,0 @@
-{
-  "name": "puzzle-upload",
-  "private": true,
-  "dependencies": {
-    "busboy": "^1.6.0",
-    "undici": "^6.19.8"
-  }
-}
