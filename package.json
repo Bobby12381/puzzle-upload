@@ -1,0 +1,10 @@
+{
+  "name": "puzzle-upload",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "dependencies": {
+    "undici": "^6.19.8",
+    "busboy": "^1.6.0"
+  }
+}
