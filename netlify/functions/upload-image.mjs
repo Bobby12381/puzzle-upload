@@ -19,7 +19,18 @@ export default async (req) => {
       return json({ error: "No file found in form field 'file'" }, 400);
     }
 
-    const buf = Buffer.from(await file.arrayBuffer());
+    const buf = Buffer.from(await file.arrayBuffer());console.log("upload", {
+  name: file.name,
+  type: file.type,
+  size: buf.length
+});
+
+return json({
+  ok: true,
+  name: file.name,
+  size: buf.length,
+  type: file.type,
+});
 
     // TODO: upload `buf` to Shopify Admin if desired. For now we just echo back.
     return json({
@@ -51,3 +62,4 @@ function json(body, status = 200, extraHeaders = {}) {
     headers: { "content-type": "application/json", ...cors(extraHeaders) },
   });
 }
+
