@@ -1,43 +1,53 @@
-
 // netlify/functions/upload-image.mjs
-// Simple upload handler without fileFrom / undici
+// Simple upload handler using req.formData() (Node 18+). No undici/fileFrom.
 
 export default async (req) => {
+  // CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("", { status: 204, headers: cors() });
+  }
+
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "content-type": "application/json" },
-    });
+    return json({ error: "Method not allowed" }, 405);
   }
 
-  let form;
   try {
-    form = await req.formData(); // multipart/form-data support in Netlify (Node 18)
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: "Failed to parse form data", details: String(e) }),
-      { status: 400, headers: { "content-type": "application/json" } }
-    );
-  }
+    const form = await req.formData(); // Netlify’s Node 18 supports this
+    const file = form.get("file");
 
-  const file = form.get("file");
-  if (!file || typeof file.arrayBuffer !== "function") {
-    return new Response(
-      JSON.stringify({ error: 'No file field named "file" found' }),
-      { status: 400, headers: { "content-type": "application/json" } }
-    );
-  }
+    if (!file || typeof file.arrayBuffer !== "function") {
+      return json({ error: "No file found in form field 'file'" }, 400);
+    }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+    const buf = Buffer.from(await file.arrayBuffer());
 
-  // Sanity-check response. Once this is good, we’ll push to Shopify.
-  return new Response(
-    JSON.stringify({
+    // TODO: upload `buf` to Shopify Admin if desired. For now we just echo back.
+    return json({
       ok: true,
-      name: file.name || "upload",
-      size: buffer.length,
-      type: file.type || "application/octet-stream",
-    }),
-    { status: 200, headers: { "content-type": "application/json" } }
-  );
+      name: file.name,
+      size: buf.length,
+      type: file.type,
+    });
+  } catch (e) {
+    return json(
+      { error: "Failed to parse form data", details: String(e) },
+      400
+    );
+  }
 };
+
+/* helpers */
+function cors(extra = {}) {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST,OPTIONS",
+    "access-control-allow-headers": "content-type",
+    ...extra,
+  };
+}
+function json(body, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", ...cors(extraHeaders) },
+  });
+}
